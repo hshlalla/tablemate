@@ -1,4 +1,6 @@
 import { Test } from '@nestjs/testing';
+import { JwtModule } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
 
@@ -17,6 +19,7 @@ describe('AuthService.signup', () => {
     };
 
     const moduleRef = await Test.createTestingModule({
+      imports: [JwtModule.register({ secret: 'test-secret' })],
       providers: [
         AuthService,
         { provide: UsersService, useValue: usersService },
@@ -45,5 +48,46 @@ describe('AuthService.signup', () => {
     await expect(
       authService.signup({ email: 'jane@example.com', password: 'x' }),
     ).rejects.toThrow('Email already registered');
+  });
+});
+
+describe('AuthService.login', () => {
+  let authService: AuthService;
+  let usersService: { findByEmail: jest.Mock };
+
+  beforeEach(async () => {
+    const passwordHash = await bcrypt.hash('correct-password', 10);
+    usersService = {
+      findByEmail: jest.fn().mockResolvedValue({
+        id: 'user-1',
+        email: 'jane@example.com',
+        passwordHash,
+      }),
+    };
+
+    const moduleRef = await Test.createTestingModule({
+      imports: [JwtModule.register({ secret: 'test-secret' })],
+      providers: [
+        AuthService,
+        { provide: UsersService, useValue: usersService },
+      ],
+    }).compile();
+
+    authService = moduleRef.get(AuthService);
+  });
+
+  it('returns an access token for correct credentials', async () => {
+    const result = await authService.login({
+      email: 'jane@example.com',
+      password: 'correct-password',
+    });
+
+    expect(result.accessToken).toEqual(expect.any(String));
+  });
+
+  it('rejects login with wrong password', async () => {
+    await expect(
+      authService.login({ email: 'jane@example.com', password: 'wrong' }),
+    ).rejects.toThrow('Invalid credentials');
   });
 });
