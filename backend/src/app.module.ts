@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
+import { UsersModule } from './users/users.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -19,6 +21,8 @@ import { AppController } from './app.controller';
         synchronize: process.env.NODE_ENV !== 'production',
       }),
     }),
+    UsersModule,
+    AuthModule,
   ],
   controllers: [AppController],
 })
