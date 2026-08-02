@@ -49,4 +49,27 @@ describe('SwipesService', () => {
     });
     expect(result).toBe(true);
   });
+
+  it('re-swiping the same target updates the existing row instead of throwing', async () => {
+    const existing = {
+      id: 'swipe-1',
+      fromUserId: 'user-1',
+      targetUserId: 'user-2',
+      liked: false,
+      createdAt: new Date('2026-01-01'),
+    };
+    repo.findOne.mockResolvedValue(existing);
+
+    const result = await service.record('user-1', 'user-2', true);
+
+    expect(repo.findOne).toHaveBeenCalledWith({
+      where: { fromUserId: 'user-1', targetUserId: 'user-2' },
+    });
+    expect(repo.create).not.toHaveBeenCalled();
+    expect(repo.save).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'swipe-1', liked: true }),
+    );
+    expect(result.id).toBe('swipe-1');
+    expect(result.liked).toBe(true);
+  });
 });

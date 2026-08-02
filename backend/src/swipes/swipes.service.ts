@@ -14,6 +14,15 @@ export class SwipesService {
     targetUserId: string,
     liked: boolean,
   ): Promise<Swipe> {
+    const existing = await this.swipesRepo.findOne({
+      where: { fromUserId, targetUserId },
+    });
+
+    if (existing) {
+      existing.liked = liked;
+      return this.swipesRepo.save(existing);
+    }
+
     const swipe = this.swipesRepo.create({ fromUserId, targetUserId, liked });
     return this.swipesRepo.save(swipe);
   }
