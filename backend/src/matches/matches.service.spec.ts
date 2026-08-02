@@ -51,4 +51,21 @@ describe('MatchesService.createIfMutual', () => {
     expect(result).toBeNull();
     expect(repo.save).not.toHaveBeenCalled();
   });
+
+  it('returns the existing match instead of creating a duplicate when one already exists', async () => {
+    swipesService.hasLiked.mockResolvedValue(true);
+    const existingMatch = {
+      id: 'match-existing',
+      userAId: 'user-1',
+      userBId: 'user-2',
+      createdAt: new Date('2026-01-01'),
+    };
+    repo.findOne.mockResolvedValue(existingMatch);
+
+    const result = await service.createIfMutual('user-1', 'user-2');
+
+    expect(result).toBe(existingMatch);
+    expect(repo.create).not.toHaveBeenCalled();
+    expect(repo.save).not.toHaveBeenCalled();
+  });
 });

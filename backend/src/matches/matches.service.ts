@@ -22,6 +22,17 @@ export class MatchesService {
       return null;
     }
 
+    const existing = await this.matchesRepo.findOne({
+      where: [
+        { userAId, userBId },
+        { userAId: userBId, userBId: userAId },
+      ],
+    });
+
+    if (existing) {
+      return existing;
+    }
+
     const match = this.matchesRepo.create({ userAId, userBId });
     return this.matchesRepo.save(match);
   }
