@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { ProfilesModule } from './profiles/profiles.module';
 import { SwipesModule } from './swipes/swipes.module';
 import { MatchesModule } from './matches/matches.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { MatchesModule } from './matches/matches.module';
     ProfilesModule,
     SwipesModule,
     MatchesModule,
+    ChatModule,
   ],
   controllers: [AppController],
 })
