@@ -1,7 +1,12 @@
+import { config } from 'dotenv';
+import { join } from 'path';
 import { parse } from 'csv-parse/sync';
 import { readFileSync } from 'fs';
 import { DataSource } from 'typeorm';
 import { Restaurant } from '../src/restaurants/restaurant.entity';
+
+// Load environment variables from .env file
+config({ path: join(__dirname, '..', '.env') });
 
 export interface RestaurantRow {
   overtureId: string;
