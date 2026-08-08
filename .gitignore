@@ -5,6 +5,9 @@ node_modules/
 dist/
 build/
 
+# Generated seed data output (Overture Maps extraction)
+backend/scripts/output/
+
 # Environment variables (never commit real secrets)
 .env
 .env.*
