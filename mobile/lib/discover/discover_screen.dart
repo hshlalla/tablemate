@@ -20,14 +20,27 @@ class DiscoverScreen extends StatefulWidget {
 
 class _DiscoverScreenState extends State<DiscoverScreen> {
   bool? _matched;
+  String? _errorMessage;
 
   Future<void> _like() async {
-    final matched = await widget.repository.swipe(widget.candidateUserId, true);
-    setState(() => _matched = matched);
+    try {
+      final matched = await widget.repository.swipe(widget.candidateUserId, true);
+      setState(() {
+        _matched = matched;
+        _errorMessage = null;
+      });
+    } catch (e) {
+      setState(() => _errorMessage = e.toString());
+    }
   }
 
   Future<void> _pass() async {
-    await widget.repository.swipe(widget.candidateUserId, false);
+    try {
+      await widget.repository.swipe(widget.candidateUserId, false);
+      setState(() => _errorMessage = null);
+    } catch (e) {
+      setState(() => _errorMessage = e.toString());
+    }
   }
 
   @override
@@ -37,6 +50,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         children: [
           Expanded(child: SwipeCard(name: widget.candidateName)),
           if (_matched == true) const Text("It's a match!"),
+          if (_errorMessage != null)
+            Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [

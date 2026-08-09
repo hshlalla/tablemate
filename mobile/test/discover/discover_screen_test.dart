@@ -24,4 +24,23 @@ void main() {
 
     verify(() => mockRepo.swipe('user-2', true)).called(1);
   });
+
+  testWidgets('shows an error message when DiscoverRepository.swipe throws', (tester) async {
+    final mockRepo = MockDiscoverRepository();
+    when(() => mockRepo.swipe('user-2', true))
+        .thenThrow(Exception('Network error'));
+
+    await tester.pumpWidget(MaterialApp(
+      home: DiscoverScreen(
+        repository: mockRepo,
+        candidateUserId: 'user-2',
+        candidateName: 'Jane',
+      ),
+    ));
+
+    await tester.tap(find.byKey(const Key('likeButton')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Exception: Network error'), findsOneWidget);
+  });
 }
