@@ -24,6 +24,7 @@ class _ChatScreenState extends State<ChatScreen> {
     super.initState();
     widget.socketClient.joinMatch(widget.matchId);
     widget.socketClient.onNewMessage((message) {
+      if (!mounted) return;
       setState(() => _messages.add(message['content'] as String));
     });
   }
