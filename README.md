@@ -36,6 +36,8 @@ npm run start:dev
 ### 맛집 씨드 데이터
 
 ```bash
+# 출력 디렉터리 생성 (DuckDB의 COPY TO는 상위 디렉터리를 자동 생성하지 않음)
+mkdir -p backend/scripts/output
 # DuckDB로 Overture Maps에서 서울 지역 맛집 추출 (DuckDB CLI 설치 필요)
 duckdb < backend/scripts/extract-overture-restaurants.sql
 # PostgreSQL에 적재
@@ -58,7 +60,7 @@ flutter run    # 실행 (아래 "알려진 제약" 참고 — 아직 화면이 �
 
 - **화면 간 내비게이션 와이어링 없음:** `mobile/lib/main.dart`는 `flutter create`가 생성한 기본 카운터 앱 그대로입니다. 로그인/회원가입, discover(스와이프), matches, chat 화면과 각 리포지토리는 모두 구현·테스트되어 있지만(Task 11-13), 이들을 하나의 앱 흐름(라우팅, 로그인 후 화면 전환, 토큰 저장/전달)으로 엮는 작업은 원래 계획(Task 1-14)에 포함되지 않았습니다. `flutter run`을 실행해도 기본 카운터 화면만 보입니다 — 후속 작업으로 필요합니다.
 - **모바일 환경 제약:** 이 개발 환경에는 Android SDK와 완전한 Xcode 설치가 없습니다. `flutter test`(헤드리스 위젯 테스트)와 `flutter analyze`, 그리고 Chrome(웹)/macOS 데스크톱 타겟은 동작하지만, 실제 iOS/Android 기기·시뮬레이터 빌드는 이 환경에서 검증되지 않았습니다.
-- **이 개발 샌드박스에서는 백엔드를 실제로 기동해 end-to-end curl 검증을 할 수 없습니다.** 이 머신의 Node.js 바이너리(Codex.app에 번들된 버전)는 Hardened Runtime + library validation이 활성화되어 있어, `bcrypt`의 네이티브 `.node` 바이너리가 Node 바이너리와 다른 Team ID로 서명되어 있다는 이유로 로드를 거부합니다(`dlopen` 단계에서 `code signature ... not valid for use in process: ... different Team IDs` 오류). `AuthModule`이 앱 부트스트랩 시점에 즉시 로드되므로, `/health` 등 어떤 엔드포인트에도 도달하기 전에 서버 프로세스 자체가 크래시합니다. `npm rebuild bcrypt --build-from-source` 및 수동 `codesign --force -s -` 재서명으로도 해결되지 않았습니다(애드혹 서명에는 Team ID가 없어 Node 바이너리의 Team ID 일치 요구사항을 근본적으로 만족시킬 수 없음). 이는 **이 샌드박스에 한정된 제약**이며, 일반 로컬 머신이나 CI 환경에서는 발생하지 않습니다. 이 환경에서의 검증은 실시간 curl 대신 자동화된 테스트 스위트(`npm run test`, `npm run build`)로 대체했습니다. 상세: `.superpowers/sdd/2026-08-01-base-research-implementation/task-14-report.md`.
+- **이 개발 샌드박스에서는 백엔드를 실제로 기동해 end-to-end curl 검증을 할 수 없습니다.** 이 머신의 Node.js 바이너리(Codex.app에 번들된 버전)는 Hardened Runtime + library validation이 활성화되어 있어, `bcrypt`의 네이티브 `.node` 바이너리가 Node 바이너리와 다른 Team ID로 서명되어 있다는 이유로 로드를 거부합니다(`dlopen` 단계에서 `code signature ... not valid for use in process: ... different Team IDs` 오류). `AuthModule`이 앱 부트스트랩 시점에 즉시 로드되므로, `/health` 등 어떤 엔드포인트에도 도달하기 전에 서버 프로세스 자체가 크래시합니다. `npm rebuild bcrypt --build-from-source` 및 수동 `codesign --force -s -` 재서명으로도 해결되지 않았습니다(애드혹 서명에는 Team ID가 없어 Node 바이너리의 Team ID 일치 요구사항을 근본적으로 만족시킬 수 없음). 이는 **이 샌드박스에 한정된 제약**이며, 일반 로컬 머신이나 CI 환경에서는 발생하지 않습니다. 이 환경에서의 검증은 실시간 curl 대신 자동화된 테스트 스위트(`npm run test`, `npm run build`)로 대체했습니다. 같은 이유로 `src/auth/auth.service.spec.ts`도 이 샌드박스에서 `npm run test` 실행 시 테스트 스위트 로드 자체에 실패합니다 — 이 테스트가 `bcrypt.hash`/`bcrypt.compare`를 직접 호출하기 때문이며, 다른 실패가 아니라 위와 동일한 근본 원인입니다. 상세: `.superpowers/sdd/2026-08-01-base-research-implementation/task-14-report.md`.
 
 ## 알려진 제약
 
