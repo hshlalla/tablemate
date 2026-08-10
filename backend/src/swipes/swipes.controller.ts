@@ -1,4 +1,11 @@
-import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { SwipesService } from './swipes.service';
 import { MatchesService } from '../matches/matches.service';
@@ -14,6 +21,10 @@ export class SwipesController {
 
   @Post()
   async create(@Req() req: any, @Body() dto: CreateSwipeDto) {
+    if (dto.targetUserId === req.user.userId) {
+      throw new BadRequestException('Cannot swipe on yourself');
+    }
+
     const swipe = await this.swipesService.record(
       req.user.userId,
       dto.targetUserId,
