@@ -38,6 +38,29 @@ class ApiClient {
     }
     return decoded;
   }
+
+  Future<dynamic> get(String path, {String? accessToken}) async {
+    final response = await _httpClient.get(
+      Uri.parse('$baseUrl$path'),
+      headers: {
+        if (accessToken != null) 'Authorization': 'Bearer $accessToken',
+      },
+    );
+
+    dynamic decoded;
+    try {
+      decoded = jsonDecode(response.body);
+    } on FormatException {
+      throw ApiException('Invalid response from server');
+    }
+
+    if (response.statusCode >= 400) {
+      final message =
+          decoded is Map<String, dynamic> ? decoded['message']?.toString() : null;
+      throw ApiException(message ?? 'Request failed');
+    }
+    return decoded;
+  }
 }
 
 class ApiException implements Exception {
