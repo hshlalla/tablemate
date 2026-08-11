@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -89,4 +91,32 @@ void main() {
 
     expect(find.text('Exception: Network error'), findsOneWidget);
   });
+
+  testWidgets(
+    'tapping like twice in quick succession only calls swipe once',
+    (tester) async {
+      final mockRepo = MockDiscoverRepository();
+      when(() => mockRepo.fetchCandidates()).thenAnswer(
+        (_) async => [
+          {'userId': 'user-2', 'displayName': 'Jane', 'bio': 'Hi'},
+        ],
+      );
+      final completer = Completer<bool>();
+      when(() => mockRepo.swipe('user-2', true))
+          .thenAnswer((_) => completer.future);
+
+      await tester.pumpWidget(MaterialApp(home: DiscoverScreen(repository: mockRepo)));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('likeButton')));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('likeButton')));
+      await tester.pump();
+
+      completer.complete(false);
+      await tester.pumpAndSettle();
+
+      verify(() => mockRepo.swipe('user-2', true)).called(1);
+    },
+  );
 }

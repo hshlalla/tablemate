@@ -15,6 +15,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   List<Map<String, dynamic>> _candidates = [];
   int _index = 0;
   bool _loading = true;
+  bool _swiping = false;
   bool? _matched;
   String? _errorMessage;
 
@@ -47,7 +48,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
   Future<void> _like() async {
     final candidate = _current;
-    if (candidate == null) return;
+    if (candidate == null || _swiping) return;
+    setState(() => _swiping = true);
     try {
       final matched =
           await widget.repository.swipe(candidate['userId'] as String, true);
@@ -56,16 +58,21 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         _matched = matched;
         _errorMessage = null;
         _index++;
+        _swiping = false;
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _errorMessage = e.toString());
+      setState(() {
+        _errorMessage = e.toString();
+        _swiping = false;
+      });
     }
   }
 
   Future<void> _pass() async {
     final candidate = _current;
-    if (candidate == null) return;
+    if (candidate == null || _swiping) return;
+    setState(() => _swiping = true);
     try {
       await widget.repository.swipe(candidate['userId'] as String, false);
       if (!mounted) return;
@@ -73,10 +80,14 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         _matched = null;
         _errorMessage = null;
         _index++;
+        _swiping = false;
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _errorMessage = e.toString());
+      setState(() {
+        _errorMessage = e.toString();
+        _swiping = false;
+      });
     }
   }
 
@@ -105,12 +116,12 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                 IconButton(
                   key: const Key('passButton'),
                   icon: const Icon(Icons.close),
-                  onPressed: _pass,
+                  onPressed: _swiping ? null : _pass,
                 ),
                 IconButton(
                   key: const Key('likeButton'),
                   icon: const Icon(Icons.favorite),
-                  onPressed: _like,
+                  onPressed: _swiping ? null : _like,
                 ),
               ],
             ),
