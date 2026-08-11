@@ -26,4 +26,16 @@ export class ProfilesService {
     });
     return this.profilesRepo.save(profile);
   }
+
+  async listCandidates(
+    excludeUserId: string,
+    excludeTargetIds: string[],
+  ): Promise<Profile[]> {
+    const excludeIds = [excludeUserId, ...excludeTargetIds];
+    return this.profilesRepo
+      .createQueryBuilder('profile')
+      .where('profile.userId NOT IN (:...excludeIds)', { excludeIds })
+      .take(50)
+      .getMany();
+  }
 }

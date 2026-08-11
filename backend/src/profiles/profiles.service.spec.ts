@@ -44,3 +44,47 @@ describe('ProfilesService.upsert', () => {
     expect(result.displayName).toBe('Jane');
   });
 });
+
+describe('ProfilesService.listCandidates', () => {
+  let service: ProfilesService;
+  let queryBuilder: { where: jest.Mock; take: jest.Mock; getMany: jest.Mock };
+  let repo: { createQueryBuilder: jest.Mock };
+
+  beforeEach(async () => {
+    queryBuilder = {
+      where: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getMany: jest
+        .fn()
+        .mockResolvedValue([
+          { userId: 'user-3', displayName: 'Amy', bio: 'Hey' },
+        ]),
+    };
+    repo = {
+      createQueryBuilder: jest.fn().mockReturnValue(queryBuilder),
+    };
+
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        ProfilesService,
+        { provide: getRepositoryToken(Profile), useValue: repo },
+      ],
+    }).compile();
+
+    service = moduleRef.get(ProfilesService);
+  });
+
+  it('excludes the given user id and target ids from the candidate list', async () => {
+    const result = await service.listCandidates('user-1', ['user-2']);
+
+    expect(repo.createQueryBuilder).toHaveBeenCalledWith('profile');
+    expect(queryBuilder.where).toHaveBeenCalledWith(
+      'profile.userId NOT IN (:...excludeIds)',
+      { excludeIds: ['user-1', 'user-2'] },
+    );
+    expect(queryBuilder.take).toHaveBeenCalledWith(50);
+    expect(result).toEqual([
+      { userId: 'user-3', displayName: 'Amy', bio: 'Hey' },
+    ]);
+  });
+});
