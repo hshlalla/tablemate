@@ -3,6 +3,7 @@ import { BadRequestException } from '@nestjs/common';
 import { SwipesController } from './swipes.controller';
 import { SwipesService } from './swipes.service';
 import { MatchesService } from '../matches/matches.service';
+import { ProfilesService } from '../profiles/profiles.service';
 
 describe('SwipesController.create', () => {
   let controller: SwipesController;
@@ -22,6 +23,7 @@ describe('SwipesController.create', () => {
       providers: [
         { provide: SwipesService, useValue: swipesService },
         { provide: MatchesService, useValue: matchesService },
+        { provide: ProfilesService, useValue: {} },
       ],
     }).compile();
 
@@ -56,5 +58,49 @@ describe('SwipesController.create', () => {
       'user-2',
     );
     expect(result.swipe).toEqual({ id: 'swipe-1', liked: true });
+  });
+});
+
+describe('SwipesController.listCandidates', () => {
+  let controller: SwipesController;
+  let swipesService: { listSwipedTargetIds: jest.Mock };
+  let profilesService: { listCandidates: jest.Mock };
+
+  beforeEach(async () => {
+    swipesService = {
+      listSwipedTargetIds: jest.fn().mockResolvedValue(['user-2']),
+    };
+    profilesService = {
+      listCandidates: jest
+        .fn()
+        .mockResolvedValue([
+          { userId: 'user-3', displayName: 'Amy', bio: 'Hey' },
+        ]),
+    };
+
+    const moduleRef = await Test.createTestingModule({
+      controllers: [SwipesController],
+      providers: [
+        { provide: SwipesService, useValue: swipesService },
+        { provide: MatchesService, useValue: {} },
+        { provide: ProfilesService, useValue: profilesService },
+      ],
+    }).compile();
+
+    controller = moduleRef.get(SwipesController);
+  });
+
+  it('excludes already-swiped users and returns candidate profiles', async () => {
+    const req = { user: { userId: 'user-1' } };
+
+    const result = await controller.listCandidates(req);
+
+    expect(swipesService.listSwipedTargetIds).toHaveBeenCalledWith('user-1');
+    expect(profilesService.listCandidates).toHaveBeenCalledWith('user-1', [
+      'user-2',
+    ]);
+    expect(result).toEqual({
+      candidates: [{ userId: 'user-3', displayName: 'Amy', bio: 'Hey' }],
+    });
   });
 });
