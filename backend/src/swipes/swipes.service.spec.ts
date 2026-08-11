@@ -5,7 +5,12 @@ import { Swipe } from './swipe.entity';
 
 describe('SwipesService', () => {
   let service: SwipesService;
-  let repo: { create: jest.Mock; save: jest.Mock; findOne: jest.Mock };
+  let repo: {
+    create: jest.Mock;
+    save: jest.Mock;
+    findOne: jest.Mock;
+    find: jest.Mock;
+  };
 
   beforeEach(async () => {
     repo = {
@@ -16,6 +21,7 @@ describe('SwipesService', () => {
           Promise.resolve({ id: 'swipe-1', ...data }),
         ),
       findOne: jest.fn(),
+      find: jest.fn(),
     };
 
     const moduleRef = await Test.createTestingModule({
@@ -71,5 +77,20 @@ describe('SwipesService', () => {
     );
     expect(result.id).toBe('swipe-1');
     expect(result.liked).toBe(true);
+  });
+
+  it('lists the target ids a user has already swiped on', async () => {
+    repo.find.mockResolvedValue([
+      { targetUserId: 'user-2' },
+      { targetUserId: 'user-3' },
+    ]);
+
+    const result = await service.listSwipedTargetIds('user-1');
+
+    expect(repo.find).toHaveBeenCalledWith({
+      where: { fromUserId: 'user-1' },
+      select: ['targetUserId'],
+    });
+    expect(result).toEqual(['user-2', 'user-3']);
   });
 });

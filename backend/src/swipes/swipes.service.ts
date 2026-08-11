@@ -33,4 +33,12 @@ export class SwipesService {
     });
     return !!swipe;
   }
+
+  async listSwipedTargetIds(fromUserId: string): Promise<string[]> {
+    const swipes = await this.swipesRepo.find({
+      where: { fromUserId },
+      select: ['targetUserId'] as any,
+    });
+    return swipes.map((s) => s.targetUserId);
+  }
 }
