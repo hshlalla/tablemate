@@ -9,7 +9,7 @@ class MatchesScreen extends StatefulWidget {
   });
 
   final MatchesRepository repository;
-  final void Function(String matchId) onSelectMatch;
+  final void Function(String matchId, String counterpartName) onSelectMatch;
 
   @override
   State<MatchesScreen> createState() => MatchesScreenState();
@@ -67,10 +67,12 @@ class MatchesScreenState extends State<MatchesScreen> {
       body: ListView.builder(
         itemCount: _matches.length,
         itemBuilder: (context, index) {
-          final matchId = _matches[index]['id'] as String;
+          final match = _matches[index];
+          final matchId = match['id'] as String;
+          final name = match['counterpartName'] as String? ?? '(이름 없음)';
           return ListTile(
-            title: Text(matchId),
-            onTap: () => widget.onSelectMatch(matchId),
+            title: Text(name),
+            onTap: () => widget.onSelectMatch(matchId, name),
           );
         },
       ),

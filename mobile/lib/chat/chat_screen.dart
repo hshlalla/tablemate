@@ -6,10 +6,12 @@ class ChatScreen extends StatefulWidget {
     super.key,
     required this.socketClient,
     required this.matchId,
+    this.counterpartName,
   });
 
   final ChatSocketClient socketClient;
   final String matchId;
+  final String? counterpartName;
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -61,7 +63,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('채팅')),
+      appBar: AppBar(title: Text(widget.counterpartName ?? '채팅')),
       body: Column(
         children: [
           if (_errorMessage != null)

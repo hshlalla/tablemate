@@ -9,6 +9,6 @@ export class MatchesController {
 
   @Get()
   listMine(@Req() req: any) {
-    return this.matchesService.listForUser(req.user.userId);
+    return this.matchesService.listForUserWithProfiles(req.user.userId);
   }
 }

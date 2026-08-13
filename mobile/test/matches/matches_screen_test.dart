@@ -7,43 +7,78 @@ import 'package:mobile/matches/matches_screen.dart';
 class MockMatchesRepository extends Mock implements MatchesRepository {}
 
 void main() {
-  testWidgets('renders each match returned by the repository', (tester) async {
+  testWidgets('renders the counterpart name of each match', (tester) async {
     final mockRepo = MockMatchesRepository();
     when(() => mockRepo.listMatches()).thenAnswer(
       (_) async => [
-        {'id': 'match-1', 'userAId': 'me', 'userBId': 'user-2'},
+        {
+          'id': 'match-1',
+          'counterpartUserId': 'user-2',
+          'counterpartName': 'Jane',
+        },
       ],
     );
 
     await tester.pumpWidget(MaterialApp(
-      home: MatchesScreen(repository: mockRepo, onSelectMatch: (_) {}),
+      home: MatchesScreen(repository: mockRepo, onSelectMatch: (_, _) {}),
     ));
     await tester.pumpAndSettle();
 
-    expect(find.text('match-1'), findsOneWidget);
+    expect(find.text('Jane'), findsOneWidget);
   });
 
-  testWidgets('tapping a match calls onSelectMatch with its id', (tester) async {
+  testWidgets('falls back to a placeholder when the counterpart name is null',
+      (tester) async {
     final mockRepo = MockMatchesRepository();
     when(() => mockRepo.listMatches()).thenAnswer(
       (_) async => [
-        {'id': 'match-1', 'userAId': 'me', 'userBId': 'user-2'},
+        {
+          'id': 'match-1',
+          'counterpartUserId': 'user-2',
+          'counterpartName': null,
+        },
       ],
     );
-    String? selected;
+
+    await tester.pumpWidget(MaterialApp(
+      home: MatchesScreen(repository: mockRepo, onSelectMatch: (_, _) {}),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('(이름 없음)'), findsOneWidget);
+  });
+
+  testWidgets('tapping a match calls onSelectMatch with its id and name',
+      (tester) async {
+    final mockRepo = MockMatchesRepository();
+    when(() => mockRepo.listMatches()).thenAnswer(
+      (_) async => [
+        {
+          'id': 'match-1',
+          'counterpartUserId': 'user-2',
+          'counterpartName': 'Jane',
+        },
+      ],
+    );
+    String? selectedId;
+    String? selectedName;
 
     await tester.pumpWidget(MaterialApp(
       home: MatchesScreen(
         repository: mockRepo,
-        onSelectMatch: (matchId) => selected = matchId,
+        onSelectMatch: (matchId, name) {
+          selectedId = matchId;
+          selectedName = name;
+        },
       ),
     ));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('match-1'));
+    await tester.tap(find.text('Jane'));
     await tester.pumpAndSettle();
 
-    expect(selected, 'match-1');
+    expect(selectedId, 'match-1');
+    expect(selectedName, 'Jane');
   });
 
   testWidgets('shows an error message when listMatches throws', (tester) async {
@@ -51,24 +86,33 @@ void main() {
     when(() => mockRepo.listMatches()).thenThrow(Exception('Network error'));
 
     await tester.pumpWidget(MaterialApp(
-      home: MatchesScreen(repository: mockRepo, onSelectMatch: (_) {}),
+      home: MatchesScreen(repository: mockRepo, onSelectMatch: (_, _) {}),
     ));
     await tester.pumpAndSettle();
 
     expect(find.text('Exception: Network error'), findsOneWidget);
   });
 
-  testWidgets('calling refresh() via GlobalKey re-invokes listMatches()', (tester) async {
+  testWidgets('calling refresh() via GlobalKey re-invokes listMatches()',
+      (tester) async {
     final mockRepo = MockMatchesRepository();
     when(() => mockRepo.listMatches()).thenAnswer(
       (_) async => [
-        {'id': 'match-1', 'userAId': 'me', 'userBId': 'user-2'},
+        {
+          'id': 'match-1',
+          'counterpartUserId': 'user-2',
+          'counterpartName': 'Jane',
+        },
       ],
     );
     final key = GlobalKey<MatchesScreenState>();
 
     await tester.pumpWidget(MaterialApp(
-      home: MatchesScreen(key: key, repository: mockRepo, onSelectMatch: (_) {}),
+      home: MatchesScreen(
+        key: key,
+        repository: mockRepo,
+        onSelectMatch: (_, _) {},
+      ),
     ));
     await tester.pumpAndSettle();
 
@@ -87,7 +131,7 @@ void main() {
       when(() => mockRepo.listMatches()).thenThrow(Exception('Network error'));
 
       await tester.pumpWidget(MaterialApp(
-        home: MatchesScreen(repository: mockRepo, onSelectMatch: (_) {}),
+        home: MatchesScreen(repository: mockRepo, onSelectMatch: (_, _) {}),
       ));
       await tester.pumpAndSettle();
 
@@ -96,7 +140,11 @@ void main() {
 
       when(() => mockRepo.listMatches()).thenAnswer(
         (_) async => [
-          {'id': 'match-1', 'userAId': 'me', 'userBId': 'user-2'},
+          {
+            'id': 'match-1',
+            'counterpartUserId': 'user-2',
+            'counterpartName': 'Jane',
+          },
         ],
       );
 
@@ -104,7 +152,7 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(() => mockRepo.listMatches()).called(1);
-      expect(find.text('match-1'), findsOneWidget);
+      expect(find.text('Jane'), findsOneWidget);
     },
   );
 }

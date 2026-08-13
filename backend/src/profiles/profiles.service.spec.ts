@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { In } from 'typeorm';
 import { ProfilesService } from './profiles.service';
 import { Profile } from './profile.entity';
 
@@ -86,5 +87,47 @@ describe('ProfilesService.listCandidates', () => {
     expect(result).toEqual([
       { userId: 'user-3', displayName: 'Amy', bio: 'Hey' },
     ]);
+  });
+});
+
+describe('ProfilesService.listByUserIds', () => {
+  let service: ProfilesService;
+  let repo: { find: jest.Mock };
+
+  beforeEach(async () => {
+    repo = { find: jest.fn() };
+
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        ProfilesService,
+        { provide: getRepositoryToken(Profile), useValue: repo },
+      ],
+    }).compile();
+
+    service = moduleRef.get(ProfilesService);
+  });
+
+  it('fetches the profiles for the given user ids in one query', async () => {
+    repo.find.mockResolvedValue([
+      { userId: 'user-2', displayName: 'Jane', bio: 'Hi' },
+      { userId: 'user-3', displayName: 'Amy', bio: 'Hey' },
+    ]);
+
+    const result = await service.listByUserIds(['user-2', 'user-3']);
+
+    expect(repo.find).toHaveBeenCalledWith({
+      where: { userId: In(['user-2', 'user-3']) },
+    });
+    expect(result).toEqual([
+      { userId: 'user-2', displayName: 'Jane', bio: 'Hi' },
+      { userId: 'user-3', displayName: 'Amy', bio: 'Hey' },
+    ]);
+  });
+
+  it('returns an empty list without querying when given no ids', async () => {
+    const result = await service.listByUserIds([]);
+
+    expect(result).toEqual([]);
+    expect(repo.find).not.toHaveBeenCalled();
   });
 });

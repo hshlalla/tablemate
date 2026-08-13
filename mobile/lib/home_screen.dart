@@ -16,7 +16,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _tabIndex = 0;
   final _matchesKey = GlobalKey<MatchesScreenState>();
 
-  void _openChat(String matchId) {
+  void _openChat(String matchId, String counterpartName) {
     final session = context.read<AppSession>();
     Navigator.push(
       context,
@@ -24,6 +24,7 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (_) => ChatScreen(
           socketClient: session.buildChatSocketClient(),
           matchId: matchId,
+          counterpartName: counterpartName,
         ),
       ),
     );

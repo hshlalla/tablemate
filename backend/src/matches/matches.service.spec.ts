@@ -3,6 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { MatchesService } from './matches.service';
 import { Match } from './match.entity';
 import { SwipesService } from '../swipes/swipes.service';
+import { ProfilesService } from '../profiles/profiles.service';
 
 describe('MatchesService.createIfMutual', () => {
   let service: MatchesService;
@@ -26,6 +27,7 @@ describe('MatchesService.createIfMutual', () => {
         MatchesService,
         { provide: getRepositoryToken(Match), useValue: repo },
         { provide: SwipesService, useValue: swipesService },
+        { provide: ProfilesService, useValue: {} },
       ],
     }).compile();
 
@@ -67,5 +69,69 @@ describe('MatchesService.createIfMutual', () => {
     expect(result).toBe(existingMatch);
     expect(repo.create).not.toHaveBeenCalled();
     expect(repo.save).not.toHaveBeenCalled();
+  });
+});
+
+describe('MatchesService.listForUserWithProfiles', () => {
+  let service: MatchesService;
+  let queryBuilder: { where: jest.Mock; getMany: jest.Mock };
+  let repo: { createQueryBuilder: jest.Mock };
+  let profilesService: { listByUserIds: jest.Mock };
+
+  beforeEach(async () => {
+    queryBuilder = {
+      where: jest.fn().mockReturnThis(),
+      getMany: jest.fn(),
+    };
+    repo = {
+      createQueryBuilder: jest.fn().mockReturnValue(queryBuilder),
+    };
+    profilesService = { listByUserIds: jest.fn() };
+
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        MatchesService,
+        { provide: getRepositoryToken(Match), useValue: repo },
+        { provide: SwipesService, useValue: {} },
+        { provide: ProfilesService, useValue: profilesService },
+      ],
+    }).compile();
+
+    service = moduleRef.get(MatchesService);
+  });
+
+  it('resolves the counterpart on each side of the match and attaches their display name', async () => {
+    queryBuilder.getMany.mockResolvedValue([
+      { id: 'match-1', userAId: 'user-1', userBId: 'user-2' },
+      { id: 'match-2', userAId: 'user-3', userBId: 'user-1' },
+    ]);
+    profilesService.listByUserIds.mockResolvedValue([
+      { userId: 'user-2', displayName: 'Jane' },
+      { userId: 'user-3', displayName: 'Amy' },
+    ]);
+
+    const result = await service.listForUserWithProfiles('user-1');
+
+    expect(profilesService.listByUserIds).toHaveBeenCalledWith([
+      'user-2',
+      'user-3',
+    ]);
+    expect(result).toEqual([
+      { id: 'match-1', counterpartUserId: 'user-2', counterpartName: 'Jane' },
+      { id: 'match-2', counterpartUserId: 'user-3', counterpartName: 'Amy' },
+    ]);
+  });
+
+  it('sets counterpartName to null when the counterpart has no profile', async () => {
+    queryBuilder.getMany.mockResolvedValue([
+      { id: 'match-1', userAId: 'user-1', userBId: 'user-2' },
+    ]);
+    profilesService.listByUserIds.mockResolvedValue([]);
+
+    const result = await service.listForUserWithProfiles('user-1');
+
+    expect(result).toEqual([
+      { id: 'match-1', counterpartUserId: 'user-2', counterpartName: null },
+    ]);
   });
 });

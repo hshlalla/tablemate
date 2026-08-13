@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Profile } from './profile.entity';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 
@@ -13,6 +13,13 @@ export class ProfilesService {
 
   getByUserId(userId: string): Promise<Profile | null> {
     return this.profilesRepo.findOne({ where: { userId } });
+  }
+
+  async listByUserIds(userIds: string[]): Promise<Profile[]> {
+    if (userIds.length === 0) {
+      return [];
+    }
+    return this.profilesRepo.find({ where: { userId: In(userIds) } });
   }
 
   async upsert(userId: string, dto: UpdateProfileDto): Promise<Profile> {
