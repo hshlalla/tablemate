@@ -9,6 +9,7 @@ export interface MatchWithProfile {
   id: string;
   counterpartUserId: string;
   counterpartName: string | null;
+  counterpartPhotoUrl: string | null;
 }
 
 @Injectable()
@@ -58,17 +59,21 @@ export class MatchesService {
       match.userAId === userId ? match.userBId : match.userAId,
     );
     const profiles = await this.profilesService.listByUserIds(counterpartIds);
-    const nameByUserId = new Map(
-      profiles.map((profile) => [profile.userId, profile.displayName]),
+    const profileByUserId = new Map(
+      profiles.map((profile) => [profile.userId, profile]),
     );
 
     return matches.map((match) => {
       const counterpartUserId =
         match.userAId === userId ? match.userBId : match.userAId;
+      const profile = profileByUserId.get(counterpartUserId);
       return {
         id: match.id,
         counterpartUserId,
-        counterpartName: nameByUserId.get(counterpartUserId) ?? null,
+        counterpartName: profile?.displayName ?? null,
+        counterpartPhotoUrl: this.profilesService.photoUrlFor(
+          profile?.photoKey ?? null,
+        ),
       };
     });
   }

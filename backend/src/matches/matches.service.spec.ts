@@ -76,7 +76,7 @@ describe('MatchesService.listForUserWithProfiles', () => {
   let service: MatchesService;
   let queryBuilder: { where: jest.Mock; getMany: jest.Mock };
   let repo: { createQueryBuilder: jest.Mock };
-  let profilesService: { listByUserIds: jest.Mock };
+  let profilesService: { listByUserIds: jest.Mock; photoUrlFor: jest.Mock };
 
   beforeEach(async () => {
     queryBuilder = {
@@ -86,7 +86,12 @@ describe('MatchesService.listForUserWithProfiles', () => {
     repo = {
       createQueryBuilder: jest.fn().mockReturnValue(queryBuilder),
     };
-    profilesService = { listByUserIds: jest.fn() };
+    profilesService = {
+      listByUserIds: jest.fn(),
+      photoUrlFor: jest.fn((key: string | null) =>
+        key ? `/profiles/photos/${key}` : null,
+      ),
+    };
 
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -106,8 +111,8 @@ describe('MatchesService.listForUserWithProfiles', () => {
       { id: 'match-2', userAId: 'user-3', userBId: 'user-1' },
     ]);
     profilesService.listByUserIds.mockResolvedValue([
-      { userId: 'user-2', displayName: 'Jane' },
-      { userId: 'user-3', displayName: 'Amy' },
+      { userId: 'user-2', displayName: 'Jane', photoKey: 'j.jpg' },
+      { userId: 'user-3', displayName: 'Amy', photoKey: null },
     ]);
 
     const result = await service.listForUserWithProfiles('user-1');
@@ -117,8 +122,18 @@ describe('MatchesService.listForUserWithProfiles', () => {
       'user-3',
     ]);
     expect(result).toEqual([
-      { id: 'match-1', counterpartUserId: 'user-2', counterpartName: 'Jane' },
-      { id: 'match-2', counterpartUserId: 'user-3', counterpartName: 'Amy' },
+      {
+        id: 'match-1',
+        counterpartUserId: 'user-2',
+        counterpartName: 'Jane',
+        counterpartPhotoUrl: '/profiles/photos/j.jpg',
+      },
+      {
+        id: 'match-2',
+        counterpartUserId: 'user-3',
+        counterpartName: 'Amy',
+        counterpartPhotoUrl: null,
+      },
     ]);
   });
 
@@ -131,7 +146,12 @@ describe('MatchesService.listForUserWithProfiles', () => {
     const result = await service.listForUserWithProfiles('user-1');
 
     expect(result).toEqual([
-      { id: 'match-1', counterpartUserId: 'user-2', counterpartName: null },
+      {
+        id: 'match-1',
+        counterpartUserId: 'user-2',
+        counterpartName: null,
+        counterpartPhotoUrl: null,
+      },
     ]);
   });
 });
