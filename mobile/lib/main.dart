@@ -15,7 +15,7 @@ class TableMateApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => AppSession(baseUrl: kApiBaseUrl),
+      create: (_) => AppSession(baseUrl: kApiBaseUrl)..restore(),
       child: MaterialApp(
         title: 'TableMate',
         theme: ThemeData(

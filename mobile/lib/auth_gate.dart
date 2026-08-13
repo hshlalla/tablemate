@@ -9,8 +9,13 @@ class AuthGate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isAuthenticated = context.watch<AppSession>().isAuthenticated;
-    return isAuthenticated
+    final session = context.watch<AppSession>();
+    if (session.isRestoring) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+    return session.isAuthenticated
         ? const HomeScreen()
         : LoginScreen(session: context.read<AppSession>());
   }

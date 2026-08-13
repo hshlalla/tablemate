@@ -4,11 +4,41 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:mobile/api/api_client.dart';
 import 'package:mobile/app_session.dart';
+import 'package:mobile/auth/token_store.dart';
 
 String _fakeJwt(Map<String, dynamic> payload) {
   String encodeSegment(Object value) =>
       base64Url.encode(utf8.encode(jsonEncode(value))).replaceAll('=', '');
   return '${encodeSegment({'alg': 'HS256'})}.${encodeSegment(payload)}.fake-signature';
+}
+
+class FakeTokenStore implements TokenStore {
+  FakeTokenStore({this.accessToken, this.refreshToken});
+  String? accessToken;
+  String? refreshToken;
+  int writes = 0;
+  int clears = 0;
+
+  @override
+  Future<({String? accessToken, String? refreshToken})> read() async =>
+      (accessToken: accessToken, refreshToken: refreshToken);
+
+  @override
+  Future<void> write({
+    required String accessToken,
+    required String refreshToken,
+  }) async {
+    this.accessToken = accessToken;
+    this.refreshToken = refreshToken;
+    writes++;
+  }
+
+  @override
+  Future<void> clear() async {
+    accessToken = null;
+    refreshToken = null;
+    clears++;
+  }
 }
 
 void main() {
@@ -171,6 +201,136 @@ void main() {
       );
       expect(candidatesCalls, 1); // one attempt, then refresh failed -> no retry
       expect(session.isAuthenticated, isFalse);
+    });
+  });
+
+  group('AppSession persistence', () {
+    test('restore loads stored tokens and decodes the user id', () async {
+      final token = _fakeJwt({'sub': 'user-1', 'email': 'jane@x.com'});
+      final store = FakeTokenStore(accessToken: token, refreshToken: 'r-1');
+      final session =
+          AppSession(baseUrl: 'http://localhost:3000', tokenStore: store);
+
+      await session.restore();
+
+      expect(session.isAuthenticated, isTrue);
+      expect(session.userId, 'user-1');
+      expect(session.isRestoring, isFalse);
+    });
+
+    test('restore leaves the session unauthenticated when nothing is stored',
+        () async {
+      final store = FakeTokenStore();
+      final session =
+          AppSession(baseUrl: 'http://localhost:3000', tokenStore: store);
+
+      await session.restore();
+
+      expect(session.isAuthenticated, isFalse);
+      expect(session.isRestoring, isFalse);
+    });
+
+    test('restore clears storage when the stored access token is corrupt',
+        () async {
+      final store =
+          FakeTokenStore(accessToken: 'not-a-jwt', refreshToken: 'r-1');
+      final session =
+          AppSession(baseUrl: 'http://localhost:3000', tokenStore: store);
+
+      await session.restore();
+
+      expect(session.isAuthenticated, isFalse);
+      expect(store.accessToken, isNull);
+      expect(store.clears, 1);
+    });
+
+    test('login persists both tokens', () async {
+      final token = _fakeJwt({'sub': 'user-1', 'email': 'jane@x.com'});
+      final store = FakeTokenStore();
+      final mockClient = MockClient((request) async {
+        return http.Response(
+          jsonEncode({'accessToken': token, 'refreshToken': 'r-1'}),
+          200,
+        );
+      });
+      final session = AppSession(
+        baseUrl: 'http://localhost:3000',
+        apiClient:
+            ApiClient(baseUrl: 'http://localhost:3000', httpClient: mockClient),
+        tokenStore: store,
+      );
+
+      await session.login('jane@x.com', 'pw');
+
+      expect(store.accessToken, token);
+      expect(store.refreshToken, 'r-1');
+      expect(store.writes, 1);
+    });
+
+    test('logout clears the store', () async {
+      final token = _fakeJwt({'sub': 'user-1', 'email': 'jane@x.com'});
+      final store = FakeTokenStore();
+      final mockClient = MockClient((request) async {
+        return http.Response(
+          jsonEncode({'accessToken': token, 'refreshToken': 'r-1'}),
+          200,
+        );
+      });
+      final session = AppSession(
+        baseUrl: 'http://localhost:3000',
+        apiClient:
+            ApiClient(baseUrl: 'http://localhost:3000', httpClient: mockClient),
+        tokenStore: store,
+      );
+      await session.login('jane@x.com', 'pw');
+
+      session.logout();
+      await Future<void>.delayed(Duration.zero); // flush best-effort clear
+
+      expect(store.clears, 1);
+      expect(store.accessToken, isNull);
+    });
+
+    test('a 401 refresh persists the rotated tokens', () async {
+      final loginAccess = _fakeJwt({'sub': 'user-1', 'email': 'jane@x.com'});
+      final freshAccess = _fakeJwt({'sub': 'user-1', 'email': 'jane@x.com'});
+      final store = FakeTokenStore();
+      var candidatesCalls = 0;
+      final mockClient = MockClient((request) async {
+        final path = request.url.path;
+        if (path == '/auth/login') {
+          return http.Response(
+            jsonEncode({'accessToken': loginAccess, 'refreshToken': 'r-1'}),
+            200,
+          );
+        }
+        if (path == '/auth/refresh') {
+          return http.Response(
+            jsonEncode({'accessToken': freshAccess, 'refreshToken': 'r-2'}),
+            200,
+          );
+        }
+        if (path == '/swipes/candidates') {
+          candidatesCalls++;
+          if (candidatesCalls == 1) {
+            return http.Response(jsonEncode({'message': 'expired'}), 401);
+          }
+          return http.Response(jsonEncode({'candidates': []}), 200);
+        }
+        return http.Response(jsonEncode({'message': 'not found'}), 404);
+      });
+      final session = AppSession(
+        baseUrl: 'http://localhost:3000',
+        apiClient:
+            ApiClient(baseUrl: 'http://localhost:3000', httpClient: mockClient),
+        tokenStore: store,
+      );
+      await session.login('jane@x.com', 'pw');
+
+      await session.discoverRepository.fetchCandidates();
+
+      expect(store.accessToken, freshAccess);
+      expect(store.refreshToken, 'r-2');
     });
   });
 }
