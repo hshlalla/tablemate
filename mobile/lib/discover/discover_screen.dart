@@ -8,10 +8,10 @@ class DiscoverScreen extends StatefulWidget {
   final DiscoverRepository repository;
 
   @override
-  State<DiscoverScreen> createState() => _DiscoverScreenState();
+  State<DiscoverScreen> createState() => DiscoverScreenState();
 }
 
-class _DiscoverScreenState extends State<DiscoverScreen> {
+class DiscoverScreenState extends State<DiscoverScreen> {
   List<Map<String, dynamic>> _candidates = [];
   int _index = 0;
   bool _loading = true;
@@ -24,6 +24,11 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     super.initState();
     _loadCandidates();
   }
+
+  /// Re-fetches the candidate queue. Exposed so a retry button (or a future
+  /// caller holding a `GlobalKey<DiscoverScreenState>`) can trigger a
+  /// refresh without restarting the app.
+  Future<void> refresh() => _loadCandidates();
 
   Future<void> _loadCandidates() async {
     try {
@@ -103,7 +108,19 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         children: [
           Expanded(
             child: candidate == null
-                ? const Center(child: Text('더 이상 후보가 없습니다'))
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('더 이상 후보가 없습니다'),
+                        ElevatedButton(
+                          key: const Key('retryButton'),
+                          onPressed: _loadCandidates,
+                          child: const Text('다시 시도'),
+                        ),
+                      ],
+                    ),
+                  )
                 : SwipeCard(name: candidate['displayName'] as String? ?? '(이름 없음)'),
           ),
           if (_matched == true) const Text("It's a match!"),

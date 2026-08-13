@@ -14,6 +14,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _tabIndex = 0;
+  final _matchesKey = GlobalKey<MatchesScreenState>();
 
   void _openChat(String matchId) {
     final session = context.read<AppSession>();
@@ -50,6 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           DiscoverScreen(repository: session.discoverRepository),
           MatchesScreen(
+            key: _matchesKey,
             repository: session.matchesRepository,
             onSelectMatch: _openChat,
           ),
@@ -57,7 +59,12 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _tabIndex,
-        onTap: (index) => setState(() => _tabIndex = index),
+        onTap: (index) {
+          if (index == 1 && index != _tabIndex) {
+            _matchesKey.currentState?.refresh();
+          }
+          setState(() => _tabIndex = index);
+        },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.explore), label: 'Discover'),
           BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'Matches'),

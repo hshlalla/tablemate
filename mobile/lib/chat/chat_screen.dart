@@ -61,6 +61,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(title: const Text('채팅')),
       body: Column(
         children: [
           if (_errorMessage != null)

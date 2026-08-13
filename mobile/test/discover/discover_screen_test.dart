@@ -93,6 +93,41 @@ void main() {
   });
 
   testWidgets(
+    'shows a retryButton once candidates are exhausted, and tapping it re-invokes fetchCandidates()',
+    (tester) async {
+      final mockRepo = MockDiscoverRepository();
+      when(() => mockRepo.fetchCandidates()).thenAnswer(
+        (_) async => [
+          {'userId': 'user-2', 'displayName': 'Jane', 'bio': 'Hi'},
+        ],
+      );
+      when(() => mockRepo.swipe('user-2', false)).thenAnswer((_) async => false);
+
+      await tester.pumpWidget(MaterialApp(home: DiscoverScreen(repository: mockRepo)));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('passButton')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('더 이상 후보가 없습니다'), findsOneWidget);
+      expect(find.byKey(const Key('retryButton')), findsOneWidget);
+      verify(() => mockRepo.fetchCandidates()).called(1);
+
+      when(() => mockRepo.fetchCandidates()).thenAnswer(
+        (_) async => [
+          {'userId': 'user-3', 'displayName': 'Amy', 'bio': 'Hey'},
+        ],
+      );
+
+      await tester.tap(find.byKey(const Key('retryButton')));
+      await tester.pumpAndSettle();
+
+      verify(() => mockRepo.fetchCandidates()).called(1);
+      expect(find.text('Amy'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
     'tapping like twice in quick succession only calls swipe once',
     (tester) async {
       final mockRepo = MockDiscoverRepository();
