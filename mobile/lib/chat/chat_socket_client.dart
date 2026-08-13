@@ -38,6 +38,18 @@ class ChatSocketClient {
     _socket.on('newMessage', handler);
   }
 
+  void onHistory(void Function(dynamic history) handler) {
+    _socket.on('history', handler);
+  }
+
+  void onError(void Function(dynamic error) handler) {
+    _socket.on('error', handler);
+  }
+
+  void onConnectError(void Function(dynamic error) handler) {
+    _socket.onConnectError(handler);
+  }
+
   void dispose() {
     _socket.dispose();
   }
