@@ -16,10 +16,45 @@ void main() {
     );
 
     await tester.pumpWidget(MaterialApp(
-      home: MatchesScreen(repository: mockRepo),
+      home: MatchesScreen(repository: mockRepo, onSelectMatch: (_) {}),
     ));
     await tester.pumpAndSettle();
 
     expect(find.text('match-1'), findsOneWidget);
+  });
+
+  testWidgets('tapping a match calls onSelectMatch with its id', (tester) async {
+    final mockRepo = MockMatchesRepository();
+    when(() => mockRepo.listMatches()).thenAnswer(
+      (_) async => [
+        {'id': 'match-1', 'userAId': 'me', 'userBId': 'user-2'},
+      ],
+    );
+    String? selected;
+
+    await tester.pumpWidget(MaterialApp(
+      home: MatchesScreen(
+        repository: mockRepo,
+        onSelectMatch: (matchId) => selected = matchId,
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('match-1'));
+    await tester.pumpAndSettle();
+
+    expect(selected, 'match-1');
+  });
+
+  testWidgets('shows an error message when listMatches throws', (tester) async {
+    final mockRepo = MockMatchesRepository();
+    when(() => mockRepo.listMatches()).thenThrow(Exception('Network error'));
+
+    await tester.pumpWidget(MaterialApp(
+      home: MatchesScreen(repository: mockRepo, onSelectMatch: (_) {}),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Exception: Network error'), findsOneWidget);
   });
 }
