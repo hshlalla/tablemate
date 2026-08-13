@@ -5,12 +5,18 @@ class AuthRepository {
 
   final ApiClient _apiClient;
 
-  Future<String> login(String email, String password) async {
+  Future<({String accessToken, String refreshToken})> login(
+    String email,
+    String password,
+  ) async {
     final result = await _apiClient.post('/auth/login', {
       'email': email,
       'password': password,
     });
-    return result['accessToken'] as String;
+    return (
+      accessToken: result['accessToken'] as String,
+      refreshToken: result['refreshToken'] as String,
+    );
   }
 
   Future<void> signup(String email, String password) async {
@@ -18,5 +24,21 @@ class AuthRepository {
       'email': email,
       'password': password,
     });
+  }
+
+  Future<({String accessToken, String refreshToken})> refresh(
+    String refreshToken,
+  ) async {
+    final result = await _apiClient.post('/auth/refresh', {
+      'refreshToken': refreshToken,
+    });
+    return (
+      accessToken: result['accessToken'] as String,
+      refreshToken: result['refreshToken'] as String,
+    );
+  }
+
+  Future<void> logout(String refreshToken) async {
+    await _apiClient.post('/auth/logout', {'refreshToken': refreshToken});
   }
 }

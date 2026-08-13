@@ -1,16 +1,13 @@
 import '../api/api_client.dart';
+import '../api/authenticated_api_client.dart';
 
 class DiscoverRepository {
-  DiscoverRepository(this._apiClient, this._accessToken);
+  DiscoverRepository(this._client);
 
-  final ApiClient _apiClient;
-  final String _accessToken;
+  final AuthenticatedApiClient _client;
 
   Future<List<Map<String, dynamic>>> fetchCandidates() async {
-    final decoded = await _apiClient.get(
-      '/swipes/candidates',
-      accessToken: _accessToken,
-    );
+    final decoded = await _client.get('/swipes/candidates');
     if (decoded is! Map<String, dynamic> || decoded['candidates'] is! List) {
       throw ApiException('Invalid response from server');
     }
@@ -18,10 +15,9 @@ class DiscoverRepository {
   }
 
   Future<bool> swipe(String targetUserId, bool liked) async {
-    final result = await _apiClient.post(
+    final result = await _client.post(
       '/swipes',
       {'targetUserId': targetUserId, 'liked': liked},
-      accessToken: _accessToken,
     );
     return result['match'] != null;
   }

@@ -26,15 +26,24 @@ class ApiClient {
     try {
       decoded = jsonDecode(response.body);
     } on FormatException {
-      throw ApiException('Invalid response from server');
+      throw ApiException(
+        'Invalid response from server',
+        statusCode: response.statusCode,
+      );
     }
 
     if (decoded is! Map<String, dynamic>) {
-      throw ApiException('Invalid response from server');
+      throw ApiException(
+        'Invalid response from server',
+        statusCode: response.statusCode,
+      );
     }
 
     if (response.statusCode >= 400) {
-      throw ApiException(decoded['message']?.toString() ?? 'Request failed');
+      throw ApiException(
+        decoded['message']?.toString() ?? 'Request failed',
+        statusCode: response.statusCode,
+      );
     }
     return decoded;
   }
@@ -51,21 +60,28 @@ class ApiClient {
     try {
       decoded = jsonDecode(response.body);
     } on FormatException {
-      throw ApiException('Invalid response from server');
+      throw ApiException(
+        'Invalid response from server',
+        statusCode: response.statusCode,
+      );
     }
 
     if (response.statusCode >= 400) {
       final message =
           decoded is Map<String, dynamic> ? decoded['message']?.toString() : null;
-      throw ApiException(message ?? 'Request failed');
+      throw ApiException(
+        message ?? 'Request failed',
+        statusCode: response.statusCode,
+      );
     }
     return decoded;
   }
 }
 
 class ApiException implements Exception {
-  ApiException(this.message);
+  ApiException(this.message, {this.statusCode});
   final String message;
+  final int? statusCode;
 
   @override
   String toString() => message;

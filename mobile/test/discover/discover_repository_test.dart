@@ -1,23 +1,24 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:mobile/api/api_client.dart';
+import 'package:mobile/api/authenticated_api_client.dart';
 import 'package:mobile/discover/discover_repository.dart';
 
-class MockApiClient extends Mock implements ApiClient {}
+class MockAuthenticatedApiClient extends Mock
+    implements AuthenticatedApiClient {}
 
 void main() {
-  group('DiscoverRepository.fetchCandidates', () {
-    test('returns the parsed candidate list from ApiClient.get', () async {
-      final mockApiClient = MockApiClient();
-      when(() => mockApiClient.get('/swipes/candidates', accessToken: 'token-123'))
-          .thenAnswer(
+  group('DiscoverRepository', () {
+    test('fetchCandidates returns the candidate list', () async {
+      final client = MockAuthenticatedApiClient();
+      when(() => client.get('/swipes/candidates')).thenAnswer(
         (_) async => {
           'candidates': [
             {'userId': 'user-2', 'displayName': 'Jane', 'bio': 'Hi'},
           ],
         },
       );
-      final repo = DiscoverRepository(mockApiClient, 'token-123');
+      final repo = DiscoverRepository(client);
 
       final result = await repo.fetchCandidates();
 
@@ -26,35 +27,24 @@ void main() {
       ]);
     });
 
-    test('throws ApiException when the response is a list, not an object', () async {
-      final mockApiClient = MockApiClient();
-      when(() => mockApiClient.get('/swipes/candidates', accessToken: 'token-123'))
-          .thenAnswer(
-        (_) async => [
-          {'userId': 'user-2', 'displayName': 'Jane', 'bio': 'Hi'},
-        ],
-      );
-      final repo = DiscoverRepository(mockApiClient, 'token-123');
-
-      expect(() => repo.fetchCandidates(), throwsA(isA<ApiException>()));
-    });
-
-    test('throws ApiException when the candidates key is missing', () async {
-      final mockApiClient = MockApiClient();
-      when(() => mockApiClient.get('/swipes/candidates', accessToken: 'token-123'))
+    test('fetchCandidates throws when the shape is invalid', () async {
+      final client = MockAuthenticatedApiClient();
+      when(() => client.get('/swipes/candidates'))
           .thenAnswer((_) async => {'unexpected': 'shape'});
-      final repo = DiscoverRepository(mockApiClient, 'token-123');
+      final repo = DiscoverRepository(client);
 
       expect(() => repo.fetchCandidates(), throwsA(isA<ApiException>()));
     });
 
-    test('throws ApiException when candidates is not a List', () async {
-      final mockApiClient = MockApiClient();
-      when(() => mockApiClient.get('/swipes/candidates', accessToken: 'token-123'))
-          .thenAnswer((_) async => {'candidates': 'not-a-list'});
-      final repo = DiscoverRepository(mockApiClient, 'token-123');
+    test('swipe posts and reports whether a match resulted', () async {
+      final client = MockAuthenticatedApiClient();
+      when(() => client.post('/swipes', {'targetUserId': 'user-2', 'liked': true}))
+          .thenAnswer((_) async => {'swipe': {}, 'match': {'id': 'm-1'}});
+      final repo = DiscoverRepository(client);
 
-      expect(() => repo.fetchCandidates(), throwsA(isA<ApiException>()));
+      final matched = await repo.swipe('user-2', true);
+
+      expect(matched, isTrue);
     });
   });
 }

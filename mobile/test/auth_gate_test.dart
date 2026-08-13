@@ -21,7 +21,10 @@ void main() {
       final token = _fakeJwt({'sub': 'user-1', 'email': 'jane@example.com'});
       final mockClient = MockClient((request) async {
         if (request.url.path == '/auth/login') {
-          return http.Response(jsonEncode({'accessToken': token}), 200);
+          return http.Response(
+            jsonEncode({'accessToken': token, 'refreshToken': 'r-1'}),
+            200,
+          );
         }
         if (request.url.path == '/swipes/candidates') {
           return http.Response(jsonEncode({'candidates': []}), 200);

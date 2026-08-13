@@ -17,7 +17,10 @@ void main() {
   testWidgets('submits email and password and authenticates the session', (tester) async {
     final token = _fakeJwt({'sub': 'user-1', 'email': 'jane@example.com'});
     final mockClient = MockClient((request) async {
-      return http.Response(jsonEncode({'accessToken': token}), 200);
+      return http.Response(
+        jsonEncode({'accessToken': token, 'refreshToken': 'r-1'}),
+        200,
+      );
     });
     final session = AppSession(
       baseUrl: 'http://localhost:3000',

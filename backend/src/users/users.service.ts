@@ -13,6 +13,10 @@ export class UsersService {
     return this.usersRepo.findOne({ where: { email } });
   }
 
+  findById(id: string): Promise<User | null> {
+    return this.usersRepo.findOne({ where: { id } });
+  }
+
   create(email: string, passwordHash: string): Promise<User> {
     const user = this.usersRepo.create({ email, passwordHash });
     return this.usersRepo.save(user);

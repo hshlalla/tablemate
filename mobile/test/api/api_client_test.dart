@@ -147,5 +147,19 @@ void main() {
         throwsA(isA<ApiException>()),
       );
     });
+
+    test('carries the HTTP status code on the thrown ApiException', () async {
+      final mockClient = MockClient((request) async {
+        return http.Response('{"message": "Unauthorized"}', 401);
+      });
+      final apiClient = ApiClient(httpClient: mockClient);
+
+      await expectLater(
+        () => apiClient.get('/matches', accessToken: 'bad-token'),
+        throwsA(
+          isA<ApiException>().having((e) => e.statusCode, 'statusCode', 401),
+        ),
+      );
+    });
   });
 }
