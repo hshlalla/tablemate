@@ -40,8 +40,9 @@ class AppSession extends ChangeNotifier {
 
   Future<void> login(String email, String password) async {
     final token = await authRepository.login(email, password);
+    final userId = decodeUserId(token);
     _accessToken = token;
-    _userId = decodeUserId(token);
+    _userId = userId;
     _discoverRepository = null;
     _matchesRepository = null;
     notifyListeners();

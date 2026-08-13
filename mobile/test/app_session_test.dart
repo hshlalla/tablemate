@@ -59,5 +59,27 @@ void main() {
 
       expect(() => session.discoverRepository, throwsStateError);
     });
+
+    test(
+        'login leaves the session unauthenticated when the token fails to decode',
+        () async {
+      final badToken = _fakeJwt({'email': 'jane@example.com'}); // no `sub`
+      final mockClient = MockClient((request) async {
+        return http.Response(jsonEncode({'accessToken': badToken}), 200);
+      });
+      final session = AppSession(
+        baseUrl: 'http://localhost:3000',
+        apiClient:
+            ApiClient(baseUrl: 'http://localhost:3000', httpClient: mockClient),
+      );
+
+      await expectLater(
+        session.login('jane@example.com', 'password123'),
+        throwsFormatException,
+      );
+
+      expect(session.isAuthenticated, isFalse);
+      expect(session.userId, isNull);
+    });
   });
 }
