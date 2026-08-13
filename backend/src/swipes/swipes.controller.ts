@@ -36,6 +36,7 @@ export class SwipesController {
         userId: c.userId,
         displayName: c.displayName,
         bio: c.bio,
+        photoUrl: this.profilesService.photoUrlFor(c.photoKey),
       })),
     };
   }

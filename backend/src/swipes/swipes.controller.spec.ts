@@ -64,7 +64,7 @@ describe('SwipesController.create', () => {
 describe('SwipesController.listCandidates', () => {
   let controller: SwipesController;
   let swipesService: { listSwipedTargetIds: jest.Mock };
-  let profilesService: { listCandidates: jest.Mock };
+  let profilesService: { listCandidates: jest.Mock; photoUrlFor: jest.Mock };
 
   beforeEach(async () => {
     swipesService = {
@@ -74,8 +74,11 @@ describe('SwipesController.listCandidates', () => {
       listCandidates: jest
         .fn()
         .mockResolvedValue([
-          { userId: 'user-3', displayName: 'Amy', bio: 'Hey' },
+          { userId: 'user-3', displayName: 'Amy', bio: 'Hey', photoKey: 'a.jpg' },
         ]),
+      photoUrlFor: jest.fn((key: string | null) =>
+        key ? `/profiles/photos/${key}` : null,
+      ),
     };
 
     const moduleRef = await Test.createTestingModule({
@@ -100,7 +103,14 @@ describe('SwipesController.listCandidates', () => {
       'user-2',
     ]);
     expect(result).toEqual({
-      candidates: [{ userId: 'user-3', displayName: 'Amy', bio: 'Hey' }],
+      candidates: [
+        {
+          userId: 'user-3',
+          displayName: 'Amy',
+          bio: 'Hey',
+          photoUrl: '/profiles/photos/a.jpg',
+        },
+      ],
     });
   });
 });
