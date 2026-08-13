@@ -18,6 +18,9 @@ class _SignupScreenState extends State<SignupScreen> {
   Future<void> _submit() async {
     try {
       await widget.authRepository.signup(_emailController.text, _passwordController.text);
+      if (mounted) {
+        Navigator.pop(context, true);
+      }
     } catch (e) {
       setState(() => _errorMessage = e.toString());
     }
