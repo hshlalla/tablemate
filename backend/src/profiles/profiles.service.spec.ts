@@ -1,4 +1,5 @@
 import { Test } from '@nestjs/testing';
+import { NotFoundException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { In } from 'typeorm';
 import { ProfilesService } from './profiles.service';
@@ -129,5 +130,51 @@ describe('ProfilesService.listByUserIds', () => {
 
     expect(result).toEqual([]);
     expect(repo.find).not.toHaveBeenCalled();
+  });
+});
+
+describe('ProfilesService.photos', () => {
+  let service: ProfilesService;
+  let repo: { update: jest.Mock; findOne: jest.Mock };
+
+  beforeEach(async () => {
+    repo = {
+      update: jest.fn().mockResolvedValue(undefined),
+      findOne: jest.fn(),
+    };
+
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        ProfilesService,
+        { provide: getRepositoryToken(Profile), useValue: repo },
+      ],
+    }).compile();
+
+    service = moduleRef.get(ProfilesService);
+  });
+
+  it('photoUrlFor builds a relative url or null', () => {
+    expect(service.photoUrlFor('abc.jpg')).toBe('/profiles/photos/abc.jpg');
+    expect(service.photoUrlFor(null)).toBeNull();
+  });
+
+  it('setPhotoKey updates the column and returns the fresh profile', async () => {
+    repo.findOne.mockResolvedValue({ userId: 'user-1', photoKey: 'k.jpg' });
+
+    const result = await service.setPhotoKey('user-1', 'k.jpg');
+
+    expect(repo.update).toHaveBeenCalledWith(
+      { userId: 'user-1' },
+      { photoKey: 'k.jpg' },
+    );
+    expect(result.photoKey).toBe('k.jpg');
+  });
+
+  it('setPhotoKey throws when the profile does not exist', async () => {
+    repo.findOne.mockResolvedValue(null);
+
+    await expect(service.setPhotoKey('ghost', 'k.jpg')).rejects.toThrow(
+      NotFoundException,
+    );
   });
 });

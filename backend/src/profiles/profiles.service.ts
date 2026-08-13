@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { Profile } from './profile.entity';
@@ -44,5 +44,18 @@ export class ProfilesService {
       .where('profile.userId NOT IN (:...excludeIds)', { excludeIds })
       .take(50)
       .getMany();
+  }
+
+  async setPhotoKey(userId: string, photoKey: string): Promise<Profile> {
+    await this.profilesRepo.update({ userId }, { photoKey });
+    const profile = await this.getByUserId(userId);
+    if (!profile) {
+      throw new NotFoundException('Profile not found');
+    }
+    return profile;
+  }
+
+  photoUrlFor(photoKey: string | null): string | null {
+    return photoKey ? `/profiles/photos/${photoKey}` : null;
   }
 }

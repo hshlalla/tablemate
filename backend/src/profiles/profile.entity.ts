@@ -16,4 +16,7 @@ export class Profile {
 
   @Column({ type: 'int', nullable: true })
   birthYear: number | null;
+
+  @Column({ type: 'text', nullable: true })
+  photoKey: string | null;
 }
