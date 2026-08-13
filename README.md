@@ -8,8 +8,8 @@
 
 - `backend/` — NestJS + PostgreSQL API 서버. **구현 완료:**
   - `auth/` — 회원가입/로그인 (JWT 액세스 토큰, bcrypt 비밀번호 해싱). Stateful 회전 방식 리프레시 토큰(DB에 sha256 해시 저장, 회전·재사용 감지, `POST /auth/refresh`·`POST /auth/logout`)
-  - `users/`, `profiles/` — 사용자 및 프로필 관리
-  - `swipes/`, `matches/` — 스와이프 및 상호 매칭 로직 (`GET /matches`는 각 매칭 상대의 표시 이름을 함께 반환)
+  - `users/`, `profiles/` — 사용자 및 프로필 관리. 프로필 사진 업로드/서빙(`POST /profiles/me/photo` 멀티파트, `GET /profiles/photos/:key` 공개 서빙, 오브젝트 스토리지(S3 호환)에 저장, 프로필당 1장). 프로필·후보·매칭 응답에 `photoUrl` 노출
+  - `swipes/`, `matches/` — 스와이프 및 상호 매칭 로직 (`GET /matches`는 각 매칭 상대의 표시 이름·사진 URL을 함께 반환)
   - `chat/` — WebSocket 채팅 게이트웨이 (JWT 인증 기반 소켓 identity)
   - `restaurants/` — 맛집 데이터 API 및 씨드 파이프라인
 - `mobile/` — Flutter 앱 (iOS/Android/웹). **구현 완료 (화면·리포지토리 + 앱 와이어링):**
@@ -64,6 +64,7 @@ flutter run    # 로그인/회원가입 화면부터 시작, 로그인 후 Disco
 
 - **로그인 세션은 기기 secure storage(`flutter_secure_storage`)에 영속 저장됩니다.** 액세스 토큰(기본 15분)과 리프레시 토큰을 저장해 앱을 재시작해도 세션이 유지됩니다. 콜드 스타트 시 저장된 액세스 토큰에서 user id를 로컬 디코딩해 즉시 진입하고, 액세스 토큰이 만료됐으면 리프레시 토큰으로 자동 갱신합니다. 웹 타겟에서 `flutter_secure_storage`는 WebCrypto 기반 실험적 구현입니다(모바일이 주 타겟).
 - **채팅 WebSocket은 연결 시점의 액세스 토큰을 사용합니다.** 장시간 연결 중 액세스 토큰이 만료돼도 소켓 연결을 자동 갱신하지는 않습니다.
+- **프로필 사진은 오브젝트 스토리지(S3 호환)에 저장되고 uuid 키로 공개 서빙됩니다.** 서명 URL/접근제어는 후속이며, 모바일 업로드/표시 UI도 다음 서브프로젝트입니다. 이 개발 샌드박스에서는 실제 S3/MinIO end-to-end 검증이 불가해 `PhotoStorage` 목 유닛 테스트 + `npm run build`로 갈음했습니다.
 - **모바일 환경 제약:** 이 개발 환경에는 Android SDK와 완전한 Xcode 설치가 없습니다. `flutter test`(헤드리스 위젯 테스트)와 `flutter analyze`, 그리고 Chrome(웹)/macOS 데스크톱 타겟은 동작하지만, 실제 iOS/Android 기기·시뮬레이터 빌드는 이 환경에서 검증되지 않았습니다.
 - **이 개발 샌드박스에서는 백엔드를 실제로 기동해 end-to-end curl 검증을 할 수 없습니다.** 이 머신의 Node.js 바이너리(Codex.app에 번들된 버전)는 Hardened Runtime + library validation이 활성화되어 있어, `bcrypt`의 네이티브 `.node` 바이너리가 Node 바이너리와 다른 Team ID로 서명되어 있다는 이유로 로드를 거부합니다(`dlopen` 단계에서 `code signature ... not valid for use in process: ... different Team IDs` 오류). `AuthModule`이 앱 부트스트랩 시점에 즉시 로드되므로, `/health` 등 어떤 엔드포인트에도 도달하기 전에 서버 프로세스 자체가 크래시합니다. `npm rebuild bcrypt --build-from-source` 및 수동 `codesign --force -s -` 재서명으로도 해결되지 않았습니다(애드혹 서명에는 Team ID가 없어 Node 바이너리의 Team ID 일치 요구사항을 근본적으로 만족시킬 수 없음). 이는 **이 샌드박스에 한정된 제약**이며, 일반 로컬 머신이나 CI 환경에서는 발생하지 않습니다. 이 환경에서의 검증은 실시간 curl 대신 자동화된 테스트 스위트(`npm run test`, `npm run build`)로 대체했습니다. 같은 이유로 `src/auth/auth.service.spec.ts`도 이 샌드박스에서 `npm run test` 실행 시 테스트 스위트 로드 자체에 실패합니다 — 이 테스트가 `bcrypt.hash`/`bcrypt.compare`를 직접 호출하기 때문이며, 다른 실패가 아니라 위와 동일한 근본 원인입니다. 상세: `.superpowers/sdd/2026-08-01-base-research-implementation/task-14-report.md`.
 
