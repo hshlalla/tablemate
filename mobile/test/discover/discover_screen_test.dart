@@ -93,6 +93,32 @@ void main() {
   });
 
   testWidgets(
+    'clears the error message once a retry succeeds',
+    (tester) async {
+      final mockRepo = MockDiscoverRepository();
+      when(() => mockRepo.fetchCandidates()).thenThrow(Exception('Network error'));
+
+      await tester.pumpWidget(MaterialApp(home: DiscoverScreen(repository: mockRepo)));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Exception: Network error'), findsOneWidget);
+      expect(find.byKey(const Key('retryButton')), findsOneWidget);
+
+      when(() => mockRepo.fetchCandidates()).thenAnswer(
+        (_) async => [
+          {'userId': 'user-2', 'displayName': 'Jane', 'bio': 'Hi'},
+        ],
+      );
+
+      await tester.tap(find.byKey(const Key('retryButton')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Exception: Network error'), findsNothing);
+      expect(find.text('Jane'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
     'shows a retryButton once candidates are exhausted, and tapping it re-invokes fetchCandidates()',
     (tester) async {
       final mockRepo = MockDiscoverRepository();

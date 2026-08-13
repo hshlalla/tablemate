@@ -38,6 +38,7 @@ class DiscoverScreenState extends State<DiscoverScreen> {
         _candidates = candidates;
         _index = 0;
         _loading = false;
+        _errorMessage = null;
       });
     } catch (e) {
       if (!mounted) return;
