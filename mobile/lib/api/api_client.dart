@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 class ApiClient {
   ApiClient({this.baseUrl = 'http://localhost:3000', http.Client? httpClient})
@@ -71,6 +72,54 @@ class ApiClient {
           decoded is Map<String, dynamic> ? decoded['message']?.toString() : null;
       throw ApiException(
         message ?? 'Request failed',
+        statusCode: response.statusCode,
+      );
+    }
+    return decoded;
+  }
+
+  Future<Map<String, dynamic>> postMultipart(
+    String path, {
+    required List<int> bytes,
+    required String filename,
+    required String field,
+    required String contentType,
+    String? accessToken,
+  }) async {
+    final request = http.MultipartRequest('POST', Uri.parse('$baseUrl$path'));
+    if (accessToken != null) {
+      request.headers['Authorization'] = 'Bearer $accessToken';
+    }
+    request.files.add(
+      http.MultipartFile.fromBytes(
+        field,
+        bytes,
+        filename: filename,
+        contentType: MediaType.parse(contentType),
+      ),
+    );
+
+    final streamed = await _httpClient.send(request);
+    final response = await http.Response.fromStream(streamed);
+
+    dynamic decoded;
+    try {
+      decoded = jsonDecode(response.body);
+    } on FormatException {
+      throw ApiException(
+        'Invalid response from server',
+        statusCode: response.statusCode,
+      );
+    }
+    if (decoded is! Map<String, dynamic>) {
+      throw ApiException(
+        'Invalid response from server',
+        statusCode: response.statusCode,
+      );
+    }
+    if (response.statusCode >= 400) {
+      throw ApiException(
+        decoded['message']?.toString() ?? 'Request failed',
         statusCode: response.statusCode,
       );
     }

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -156,6 +158,56 @@ void main() {
 
       await expectLater(
         () => apiClient.get('/matches', accessToken: 'bad-token'),
+        throwsA(
+          isA<ApiException>().having((e) => e.statusCode, 'statusCode', 401),
+        ),
+      );
+    });
+  });
+
+  group('ApiClient.postMultipart', () {
+    test('sends a multipart POST with the bearer token and file', () async {
+      late http.Request captured;
+      final mockClient = MockClient((request) async {
+        captured = request;
+        return http.Response(
+          jsonEncode({'photoUrl': '/profiles/photos/x.jpg'}),
+          200,
+        );
+      });
+      final apiClient = ApiClient(httpClient: mockClient);
+
+      final result = await apiClient.postMultipart(
+        '/profiles/me/photo',
+        bytes: [1, 2, 3],
+        filename: 'p.jpg',
+        field: 'photo',
+        contentType: 'image/jpeg',
+        accessToken: 'tok',
+      );
+
+      expect(captured.method, 'POST');
+      expect(captured.url.path, '/profiles/me/photo');
+      expect(captured.headers['authorization'], 'Bearer tok');
+      expect(captured.headers['content-type'], contains('multipart/form-data'));
+      expect(result, {'photoUrl': '/profiles/photos/x.jpg'});
+    });
+
+    test('throws ApiException with status on an error response', () async {
+      final mockClient = MockClient((request) async {
+        return http.Response(jsonEncode({'message': 'Unauthorized'}), 401);
+      });
+      final apiClient = ApiClient(httpClient: mockClient);
+
+      await expectLater(
+        () => apiClient.postMultipart(
+          '/profiles/me/photo',
+          bytes: [1],
+          filename: 'p.jpg',
+          field: 'photo',
+          contentType: 'image/jpeg',
+          accessToken: 'bad',
+        ),
         throwsA(
           isA<ApiException>().having((e) => e.statusCode, 'statusCode', 401),
         ),
