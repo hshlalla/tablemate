@@ -78,5 +78,42 @@ void main() {
       );
       expect(refreshCalls, 0);
     });
+
+    test('postMultipart refreshes once and retries on a 401', () async {
+      var calls = 0;
+      final authHeaders = <String?>[];
+      final api = ApiClient(
+        httpClient: MockClient((request) async {
+          calls++;
+          authHeaders.add(request.headers['authorization']);
+          if (calls == 1) {
+            return http.Response('{"message": "expired"}', 401);
+          }
+          return http.Response('{"photoUrl": "/profiles/photos/x.jpg"}', 200);
+        }),
+      );
+      var refreshCalls = 0;
+      final client = AuthenticatedApiClient(
+        api,
+        () => 'stale',
+        () async {
+          refreshCalls++;
+          return 'fresh';
+        },
+      );
+
+      final result = await client.postMultipart(
+        '/profiles/me/photo',
+        bytes: [1, 2, 3],
+        filename: 'p.jpg',
+        field: 'photo',
+        contentType: 'image/jpeg',
+      );
+
+      expect(refreshCalls, 1);
+      expect(calls, 2);
+      expect(authHeaders, ['Bearer stale', 'Bearer fresh']);
+      expect(result, {'photoUrl': '/profiles/photos/x.jpg'});
+    });
   });
 }
