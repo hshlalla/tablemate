@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/profile_avatar.dart';
 import 'chat_socket_client.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -7,11 +8,13 @@ class ChatScreen extends StatefulWidget {
     required this.socketClient,
     required this.matchId,
     this.counterpartName,
+    this.counterpartPhotoUrl,
   });
 
   final ChatSocketClient socketClient;
   final String matchId;
   final String? counterpartName;
+  final String? counterpartPhotoUrl;
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -63,7 +66,15 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.counterpartName ?? '채팅')),
+      appBar: AppBar(
+        title: Row(
+          children: [
+            ProfileAvatar(imageUrl: widget.counterpartPhotoUrl, radius: 16),
+            const SizedBox(width: 8),
+            Text(widget.counterpartName ?? '채팅'),
+          ],
+        ),
+      ),
       body: Column(
         children: [
           if (_errorMessage != null)

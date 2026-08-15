@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:mobile/matches/matches_repository.dart';
 import 'package:mobile/matches/matches_screen.dart';
+import 'package:mobile/widgets/profile_avatar.dart';
 
 class MockMatchesRepository extends Mock implements MatchesRepository {}
 
@@ -15,12 +16,13 @@ void main() {
           'id': 'match-1',
           'counterpartUserId': 'user-2',
           'counterpartName': 'Jane',
+          'counterpartPhotoUrl': null,
         },
       ],
     );
 
     await tester.pumpWidget(MaterialApp(
-      home: MatchesScreen(repository: mockRepo, onSelectMatch: (_, _) {}),
+      home: MatchesScreen(repository: mockRepo, onSelectMatch: (_, _, _) {}),
     ));
     await tester.pumpAndSettle();
 
@@ -36,19 +38,20 @@ void main() {
           'id': 'match-1',
           'counterpartUserId': 'user-2',
           'counterpartName': null,
+          'counterpartPhotoUrl': null,
         },
       ],
     );
 
     await tester.pumpWidget(MaterialApp(
-      home: MatchesScreen(repository: mockRepo, onSelectMatch: (_, _) {}),
+      home: MatchesScreen(repository: mockRepo, onSelectMatch: (_, _, _) {}),
     ));
     await tester.pumpAndSettle();
 
     expect(find.text('(이름 없음)'), findsOneWidget);
   });
 
-  testWidgets('tapping a match calls onSelectMatch with its id and name',
+  testWidgets('renders a counterpart avatar from the resolved photo url',
       (tester) async {
     final mockRepo = MockMatchesRepository();
     when(() => mockRepo.listMatches()).thenAnswer(
@@ -57,18 +60,49 @@ void main() {
           'id': 'match-1',
           'counterpartUserId': 'user-2',
           'counterpartName': 'Jane',
+          'counterpartPhotoUrl': '/profiles/photos/j.jpg',
+        },
+      ],
+    );
+
+    await tester.pumpWidget(MaterialApp(
+      home: MatchesScreen(
+        repository: mockRepo,
+        onSelectMatch: (_, _, _) {},
+        imageBaseUrl: 'http://localhost:3000',
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    final avatar = tester.widget<ProfileAvatar>(find.byType(ProfileAvatar));
+    expect(avatar.imageUrl, 'http://localhost:3000/profiles/photos/j.jpg');
+  });
+
+  testWidgets('tapping a match calls onSelectMatch with id, name and photo url',
+      (tester) async {
+    final mockRepo = MockMatchesRepository();
+    when(() => mockRepo.listMatches()).thenAnswer(
+      (_) async => [
+        {
+          'id': 'match-1',
+          'counterpartUserId': 'user-2',
+          'counterpartName': 'Jane',
+          'counterpartPhotoUrl': '/profiles/photos/j.jpg',
         },
       ],
     );
     String? selectedId;
     String? selectedName;
+    String? selectedPhotoUrl;
 
     await tester.pumpWidget(MaterialApp(
       home: MatchesScreen(
         repository: mockRepo,
-        onSelectMatch: (matchId, name) {
+        imageBaseUrl: 'http://localhost:3000',
+        onSelectMatch: (matchId, name, photoUrl) {
           selectedId = matchId;
           selectedName = name;
+          selectedPhotoUrl = photoUrl;
         },
       ),
     ));
@@ -79,6 +113,7 @@ void main() {
 
     expect(selectedId, 'match-1');
     expect(selectedName, 'Jane');
+    expect(selectedPhotoUrl, 'http://localhost:3000/profiles/photos/j.jpg');
   });
 
   testWidgets('shows an error message when listMatches throws', (tester) async {
@@ -86,7 +121,7 @@ void main() {
     when(() => mockRepo.listMatches()).thenThrow(Exception('Network error'));
 
     await tester.pumpWidget(MaterialApp(
-      home: MatchesScreen(repository: mockRepo, onSelectMatch: (_, _) {}),
+      home: MatchesScreen(repository: mockRepo, onSelectMatch: (_, _, _) {}),
     ));
     await tester.pumpAndSettle();
 
@@ -102,6 +137,7 @@ void main() {
           'id': 'match-1',
           'counterpartUserId': 'user-2',
           'counterpartName': 'Jane',
+          'counterpartPhotoUrl': null,
         },
       ],
     );
@@ -111,7 +147,7 @@ void main() {
       home: MatchesScreen(
         key: key,
         repository: mockRepo,
-        onSelectMatch: (_, _) {},
+        onSelectMatch: (_, _, _) {},
       ),
     ));
     await tester.pumpAndSettle();
@@ -131,7 +167,7 @@ void main() {
       when(() => mockRepo.listMatches()).thenThrow(Exception('Network error'));
 
       await tester.pumpWidget(MaterialApp(
-        home: MatchesScreen(repository: mockRepo, onSelectMatch: (_, _) {}),
+        home: MatchesScreen(repository: mockRepo, onSelectMatch: (_, _, _) {}),
       ));
       await tester.pumpAndSettle();
 
@@ -144,6 +180,7 @@ void main() {
             'id': 'match-1',
             'counterpartUserId': 'user-2',
             'counterpartName': 'Jane',
+            'counterpartPhotoUrl': null,
           },
         ],
       );

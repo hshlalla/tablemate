@@ -5,10 +5,39 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:mobile/discover/discover_repository.dart';
 import 'package:mobile/discover/discover_screen.dart';
+import 'package:mobile/discover/swipe_card.dart';
 
 class MockDiscoverRepository extends Mock implements DiscoverRepository {}
 
 void main() {
+  testWidgets('resolves the candidate photoUrl into an absolute SwipeCard image',
+      (tester) async {
+    final mockRepo = MockDiscoverRepository();
+    when(() => mockRepo.fetchCandidates()).thenAnswer(
+      (_) async => [
+        {
+          'userId': 'user-2',
+          'displayName': 'Jane',
+          'bio': 'Hi',
+          'photoUrl': '/profiles/photos/a.jpg',
+        },
+      ],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: DiscoverScreen(
+          repository: mockRepo,
+          imageBaseUrl: 'http://localhost:3000',
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final card = tester.widget<SwipeCard>(find.byType(SwipeCard));
+    expect(card.imageUrl, 'http://localhost:3000/profiles/photos/a.jpg');
+  });
+
   testWidgets('fetches candidates on load and shows the first one', (tester) async {
     final mockRepo = MockDiscoverRepository();
     when(() => mockRepo.fetchCandidates()).thenAnswer(

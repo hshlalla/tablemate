@@ -16,7 +16,11 @@ class _HomeScreenState extends State<HomeScreen> {
   int _tabIndex = 0;
   final _matchesKey = GlobalKey<MatchesScreenState>();
 
-  void _openChat(String matchId, String counterpartName) {
+  void _openChat(
+    String matchId,
+    String counterpartName,
+    String? counterpartPhotoUrl,
+  ) {
     final session = context.read<AppSession>();
     Navigator.push(
       context,
@@ -25,6 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
           socketClient: session.buildChatSocketClient(),
           matchId: matchId,
           counterpartName: counterpartName,
+          counterpartPhotoUrl: counterpartPhotoUrl,
         ),
       ),
     );
@@ -50,11 +55,15 @@ class _HomeScreenState extends State<HomeScreen> {
       body: IndexedStack(
         index: _tabIndex,
         children: [
-          DiscoverScreen(repository: session.discoverRepository),
+          DiscoverScreen(
+            repository: session.discoverRepository,
+            imageBaseUrl: session.baseUrl,
+          ),
           MatchesScreen(
             key: _matchesKey,
             repository: session.matchesRepository,
             onSelectMatch: _openChat,
+            imageBaseUrl: session.baseUrl,
           ),
         ],
       ),

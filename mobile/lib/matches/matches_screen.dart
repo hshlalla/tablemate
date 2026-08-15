@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../photo_url.dart';
+import '../widgets/profile_avatar.dart';
 import 'matches_repository.dart';
 
 class MatchesScreen extends StatefulWidget {
@@ -6,10 +8,16 @@ class MatchesScreen extends StatefulWidget {
     super.key,
     required this.repository,
     required this.onSelectMatch,
+    this.imageBaseUrl = '',
   });
 
   final MatchesRepository repository;
-  final void Function(String matchId, String counterpartName) onSelectMatch;
+  final void Function(
+    String matchId,
+    String counterpartName,
+    String? counterpartPhotoUrl,
+  ) onSelectMatch;
+  final String imageBaseUrl;
 
   @override
   State<MatchesScreen> createState() => MatchesScreenState();
@@ -70,9 +78,14 @@ class MatchesScreenState extends State<MatchesScreen> {
           final match = _matches[index];
           final matchId = match['id'] as String;
           final name = match['counterpartName'] as String? ?? '(이름 없음)';
+          final photoUrl = absolutePhotoUrl(
+            widget.imageBaseUrl,
+            match['counterpartPhotoUrl'] as String?,
+          );
           return ListTile(
+            leading: ProfileAvatar(imageUrl: photoUrl),
             title: Text(name),
-            onTap: () => widget.onSelectMatch(matchId, name),
+            onTap: () => widget.onSelectMatch(matchId, name, photoUrl),
           );
         },
       ),

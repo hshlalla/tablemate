@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
+import '../photo_url.dart';
 import 'discover_repository.dart';
 import 'swipe_card.dart';
 
 class DiscoverScreen extends StatefulWidget {
-  const DiscoverScreen({super.key, required this.repository});
+  const DiscoverScreen({
+    super.key,
+    required this.repository,
+    this.imageBaseUrl = '',
+  });
 
   final DiscoverRepository repository;
+  final String imageBaseUrl;
 
   @override
   State<DiscoverScreen> createState() => DiscoverScreenState();
@@ -122,7 +128,13 @@ class DiscoverScreenState extends State<DiscoverScreen> {
                       ],
                     ),
                   )
-                : SwipeCard(name: candidate['displayName'] as String? ?? '(이름 없음)'),
+                : SwipeCard(
+                    name: candidate['displayName'] as String? ?? '(이름 없음)',
+                    imageUrl: absolutePhotoUrl(
+                      widget.imageBaseUrl,
+                      candidate['photoUrl'] as String?,
+                    ),
+                  ),
           ),
           if (_matched == true) const Text("It's a match!"),
           if (_errorMessage != null)

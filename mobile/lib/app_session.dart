@@ -33,6 +33,7 @@ class AppSession extends ChangeNotifier {
   bool get isAuthenticated => _accessToken != null;
   bool get isRestoring => _isRestoring;
   String? get userId => _userId;
+  String get baseUrl => _baseUrl;
 
   late final AuthRepository authRepository = AuthRepository(_apiClient);
 
