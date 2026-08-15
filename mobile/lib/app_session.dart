@@ -8,6 +8,7 @@ import 'auth/secure_token_store.dart';
 import 'chat/chat_socket_client.dart';
 import 'discover/discover_repository.dart';
 import 'matches/matches_repository.dart';
+import 'profile/profile_repository.dart';
 
 class AppSession extends ChangeNotifier {
   AppSession({
@@ -29,6 +30,7 @@ class AppSession extends ChangeNotifier {
   Future<String>? _inFlightRefresh;
   DiscoverRepository? _discoverRepository;
   MatchesRepository? _matchesRepository;
+  ProfileRepository? _profileRepository;
 
   bool get isAuthenticated => _accessToken != null;
   bool get isRestoring => _isRestoring;
@@ -48,6 +50,9 @@ class AppSession extends ChangeNotifier {
 
   MatchesRepository get matchesRepository =>
       _matchesRepository ??= MatchesRepository(_authClient);
+
+  ProfileRepository get profileRepository =>
+      _profileRepository ??= ProfileRepository(_authClient);
 
   String _requireToken() {
     final token = _accessToken;
@@ -97,6 +102,7 @@ class AppSession extends ChangeNotifier {
     _userId = null;
     _discoverRepository = null;
     _matchesRepository = null;
+    _profileRepository = null;
     notifyListeners();
     if (refreshToken != null) {
       // Best-effort server-side revocation; ignore failures.
