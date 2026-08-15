@@ -4,6 +4,7 @@ import 'app_session.dart';
 import 'chat/chat_screen.dart';
 import 'discover/discover_screen.dart';
 import 'matches/matches_screen.dart';
+import 'profile/profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -43,6 +44,22 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: Text(_tabIndex == 0 ? 'Discover' : 'Matches'),
         actions: [
+          IconButton(
+            key: const Key('profileButton'),
+            icon: const Icon(Icons.person),
+            onPressed: () {
+              final session = context.read<AppSession>();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ProfileScreen(
+                    repository: session.profileRepository,
+                    imageBaseUrl: session.baseUrl,
+                  ),
+                ),
+              );
+            },
+          ),
           IconButton(
             key: const Key('logoutButton'),
             icon: const Icon(Icons.logout),

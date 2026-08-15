@@ -94,6 +94,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('logoutButton')), findsOneWidget);
+      expect(find.byKey(const Key('profileButton')), findsOneWidget);
       expect(find.text('더 이상 후보가 없습니다'), findsOneWidget);
 
       await tester.tap(find.byKey(const Key('logoutButton')));
